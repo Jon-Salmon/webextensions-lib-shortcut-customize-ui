@@ -16,10 +16,10 @@ var ShortcutCustomizeUI = {
   },
 
   build: async function(options) {
-    var defaults = {
-      showDescription: true
+    const defaultOptions = {
+      showDescriptions: true
     };
-    options        = this.setDefaults(options, defaults);
+    options        = Object.assign({}, defaultOptions, options || {});
     const isMac    = /^Mac/i.test(navigator.platform);
     const commands = await browser.commands.getAll();
     const list     = document.createElement('ul');
@@ -27,7 +27,8 @@ var ShortcutCustomizeUI = {
     list.classList.add('shortcuts');
     const items    = [];
     for (let command of commands) {
-      command.updateKey = command.shortcut.replace(/(Alt|Control|Ctrl|Command|Meta|Shift)\+/gi, '').trim();
+      const initialShortcut = command.shortcut || '';
+      command.currentUnmodifedHotkey = initialShortcut.replace(/(Alt|Control|Ctrl|Command|Meta|Shift)\+/gi, '').trim();
       const update = () => {
         const key = this.normalizeKey(keyField.value);
         if (!key)
@@ -42,7 +43,7 @@ var ShortcutCustomizeUI = {
         if (shiftLabel.checkbox.checked)
           shortcut.push('Shift');
         shortcut.push(key);
-        command.updateKey = key;
+        command.currentUnmodifedHotkey = key;
         const fullShortcut = shortcut.join('+');
         try {
           browser.commands.update({
@@ -91,15 +92,15 @@ var ShortcutCustomizeUI = {
         })
       };
 
-      const clean = () => {
-        keyField.value = this.getLocalizedKey(command.updateKey) || command.updateKey;
+      const cleanKeyField = () => {
+        keyField.value = this.getLocalizedKey(command.currentUnmodifedHotkey) || command.currentUnmodifedHotkey;
       }
 
       const item = document.createElement('li');
       item.classList.add(this.commonClass);
       item.classList.add('shortcut');
 
-      if (options.showDescription){
+      if (options.showDescriptions) {
         const name = `${command.description || command.name}: `
           .replace(/__MSG_(.+?)__/g, aMatched => browser.i18n.getMessage(aMatched.slice(6, -2)));
         const nameLabel = item.appendChild(document.createElement('label'));
@@ -126,7 +127,7 @@ var ShortcutCustomizeUI = {
       keyField.setAttribute('type', 'text');
       keyField.setAttribute('size', 8);
       keyField.addEventListener('input', update);
-      keyField.addEventListener('blur', clean);
+      keyField.addEventListener('blur', cleanKeyField);
       if (!this.available)
         keyField.setAttribute('disabled', true);
 
@@ -287,7 +288,7 @@ var ShortcutCustomizeUI = {
     global: {
       Comma:  [','],
       Period: ['.'],
-      Space:  ['Space'],
+      Space:  [' '],
       Up:     ['↑'],
       Down:   ['↓'],
       Left:   ['←', '<=', '<-'],
@@ -333,11 +334,5 @@ var ShortcutCustomizeUI = {
       this.keyNameMapLocales[browser.i18n.getUILanguage().replace(/[-_].+$/, '')] ||
       {}
     );
-  },
-  setDefaults(options, defaults) {
-    for (var property in options) {
-        defaults[property] = options[property];
-    }
-    return defaults;
   }
 };
