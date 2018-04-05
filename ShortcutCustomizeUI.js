@@ -288,7 +288,7 @@ var ShortcutCustomizeUI = {
     global: {
       Comma:  [','],
       Period: ['.'],
-      Space:  [' '],
+      Space:  ['Space'],
       Up:     ['↑'],
       Down:   ['↓'],
       Left:   ['←', '<=', '<-'],
